@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track Your Package</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:transparent;padding:20px;text-align:center}
+    input[type="text"],button{padding:12px;font-size:16px;width:100%;max-width:400px;margin:8px auto;display:block}
+    button{background-color:black;color:white;border:none;cursor:pointer}
+    #trackingResult{margin-top:20px;border:1px solid #ccc;padding:16px;border-radius:8px;background:white;text-align:left}
+    .history-entry{margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:8px}
+    .not-found{color:red;font-weight:bold}
+  </style>
+</head>
+<body>
+  <h2>Track Your Package</h2>
+  <input type="text" id="trackingInput" placeholder="Enter Tracking Number..." />
+  <button onclick="trackNow()">Track</button>
+  <div id="trackingResult"></div>
+
+<script>
+  const API_URL = "REPLACE_WITH_YOUR_APPS_SCRIPT_WEBAPP_URL"; // replace after deploy
+  document.getElementById("trackingInput").addEventListener("keydown", function(e){ if(e.key==='Enter'){ e.preventDefault(); trackNow(); }});
+
+  async function trackNow(){
+    const tn = document.getElementById("trackingInput").value.trim();
+    if(tn.length < 3){ return; }
+    try{
+      const res = await fetch(`${API_URL}?action=trackPackage&trackingNumber=${encodeURIComponent(tn)}`);
+      const data = await res.json();
+      showResult(data);
+    } catch(err){
+      console.error(err);
+      document.getElementById("trackingResult").innerHTML = "<div class='not-found'>⚠ Error contacting server.</div>";
+    }
+  }
+
+  function showResult(res){
+    const div = document.getElementById("trackingResult");
+    if(!res || !res.package){ div.innerHTML = "<div class='not-found'>❌ Tracking number not found.</div>"; return; }
+    const info = res.package; const history = res.history || [];
+    div.innerHTML = `
+      <h3>Tracking #: ${info['Tracking Number']}</h3>
+      <p><b>Receiver:</b> ${info['Receiver Name']}<br>
+      <b>City:</b> ${info['Receiver City/Town']}<br>
+      <b>COD:</b> ${info['C.O.D (Cash on Delivery) Delivery fee included']}<br>
+      <b>Status:</b> ${info['Latest Status']} <br>
+      <b>Last Updated:</b> ${info['Status Update Timestamp'] ? new Date(info['Status Update Timestamp']).toLocaleString() : 'N/A'}</p>
+      <h4>Status History</h4>
+      ${history.length>0 ? history.map(h=>`
+        <div class="history-entry">
+          <b>${h.timestamp ? new Date(h.timestamp).toLocaleString() : ''}</b><br>
+          Status: ${h.status}<br>
+          Notes: ${h.details}
+        </div>`).join('') : '<p>No updates yet.</p>'}
+    `;
+  }
+</script>
+</body>
+</html>

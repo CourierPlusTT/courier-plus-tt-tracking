@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Courier Plus TT — Live Tracking</title>
+  <style>
+    :root { --primary:#000; --accent:#FFD700; --text:#111; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Segoe UI, Roboto, Arial, sans-serif;background:#f3f4f6;color:var(--text)}
+    header{background:var(--primary);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px}
+    header img{height:44px}
+    nav{display:flex;flex-direction:column;position:fixed;top:70px;left:16px;background:rgba(0,0,0,0.7);border-radius:8px;padding:10px 0;z-index:10}
+    nav button{background:none;border:none;color:#fff;padding:12px 20px;width:180px;text-align:left;font-weight:600;cursor:pointer;border-left:4px solid transparent}
+    nav button:hover, nav button.active{background:var(--accent);color:var(--primary);border-left-color:var(--primary)}
+    #content{margin-left:220px;margin-top:36px;padding:28px;max-width:980px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.12);min-height:60vh}
+    @media(max-width:800px){nav{position:static;flex-direction:row;width:100%;justify-content:space-around;background:transparent;padding:0;margin:12px 0}nav button{width:auto;text-align:center;padding:10px 12px}#content{margin-left:0;margin-top:12px;padding:18px}}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://drive.google.com/uc?export=view&id=1xea5uY2P2axAgtfiExw3YDf722H_DiZw" alt="Courier Plus TT">
+    <span style="font-weight:700;font-size:20px">Courier Plus TT</span>
+  </header>
+
+  <nav>
+    <button id="tab-form" class="active" onclick="loadTab('form')">Order Entry</button>
+    <button id="tab-orders" onclick="loadTab('orders')">Orders</button>
+    <button id="tab-tracking" onclick="loadTab('tracking')">Tracking</button>
+  </nav>
+
+  <div id="content">Loading...</div>
+
+<script>
+  // Replace with your Apps Script web app deployment URL AFTER you deploy the script.
+  // Example: https://script.google.com/macros/s/AKfycbx.../exec
+  const API_URL = "REPLACE_WITH_YOUR_APPS_SCRIPT_WEBAPP_URL";
+
+  function setActive(tabId){
+    document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+    const el = document.getElementById("tab-" + tabId); if(el) el.classList.add("active");
+  }
+
+  // fetch local partial (form.html, orders.html, tracking.html) and insert
+  async function loadTab(tabName){
+    setActive(tabName);
+    const contentDiv = document.getElementById('content');
+    contentDiv.innerHTML = 'Loading...';
+    try {
+      const res = await fetch(tabName + '.html');
+      const html = await res.text();
+      contentDiv.innerHTML = html;
+      runInlineScripts(contentDiv);
+      const firstInput = contentDiv.querySelector('input, select, textarea, button');
+      if(firstInput) firstInput.focus();
+    } catch(err){
+      console.error(err);
+      contentDiv.innerHTML = '<p style="color:red">Error loading tab.</p>';
+    }
+  }
+
+  // execute inline scripts contained in loaded partials
+  function runInlineScripts(container){
+    const scripts = container.querySelectorAll('script');
+    scripts.forEach(oldScript => {
+      const newScript = document.createElement('script');
+      if (oldScript.src) {
+        newScript.src = oldScript.src;
+        newScript.async = false;
+      } else {
+        newScript.textContent = oldScript.textContent;
+      }
+      document.body.appendChild(newScript);
+      oldScript.remove();
+    });
+  }
+
+  window.onload = ()=> loadTab('form');
+</script>
+</body>
+</html>

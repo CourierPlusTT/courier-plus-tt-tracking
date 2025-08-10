@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:Arial,sans-serif;background:transparent;padding:20px}
+    #ordersList{border:1px solid #ccc;padding:16px;border-radius:8px;background:white;max-width:800px;margin:auto}
+    .order{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #eee}
+    .order strong{display:block;margin-bottom:4px}
+    .no-orders{color:#999;font-style:italic;text-align:center;margin-top:30px}
+  </style>
+</head>
+<body>
+  <h2>Your Orders</h2>
+  <div id="ordersList">Loading your orders...</div>
+
+<script>
+  const API_URL = "REPLACE_WITH_YOUR_APPS_SCRIPT_WEBAPP_URL"; // change after deployment
+
+  async function loadOrders(){
+    let email = sessionStorage.getItem('cptt_email');
+    if(!email){
+      email = prompt('Enter your email to view orders:');
+      if(!email){ document.getElementById('ordersList').innerHTML = '<div class="no-orders">No email provided.</div>'; return; }
+      sessionStorage.setItem('cptt_email', email);
+    }
+    try{
+      const res = await fetch(`${API_URL}?action=getOrders&email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      const list = document.getElementById('ordersList');
+      if(!data || data.length===0){ list.innerHTML = '<div class="no-orders">No orders found for your email address.</div>'; return; }
+      list.innerHTML = data.map(o=>{
+        const lastUpdated = o['Status Update Timestamp'] ? new Date(o['Status Update Timestamp']).toLocaleString() : 'N/A';
+        return `
+          <div class="order">
+            <strong>Tracking #: ${o['Tracking Number']}</strong>
+            Receiver: ${o['Receiver Name']}<br>
+            City: ${o['Receiver City/Town']}<br>
+            COD: ${o['C.O.D (Cash on Delivery) Delivery fee included']}<br>
+            Status: ${o['Latest Status']}<br>
+            Last Updated: ${lastUpdated}
+          </div>
+        `;
+      }).join('');
+    } catch(err){
+      document.getElementById('ordersList').innerHTML = '<div class="no-orders">Error loading orders.</div>';
+      console.error(err);
+    }
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>

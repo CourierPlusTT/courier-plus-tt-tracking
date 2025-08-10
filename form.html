@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{--accent:#FFD700;--dark:#000;--card-bg:rgba(255,255,255,0.98)}
+    html,body{height:100%;margin:0;font-family:Segoe UI, Roboto, Arial;background:transparent;color:#222}
+    .form-wrap{max-width:820px;margin:32px auto;background:var(--card-bg);border-radius:12px;padding:26px 34px;box-shadow:0 8px 30px rgba(0,0,0,0.12);position:relative;padding-bottom:140px}
+    h2{margin-top:0;margin-bottom:10px;color:var(--dark);font-size:20px}
+    .row{margin-bottom:18px}label{display:block;font-weight:700;margin-bottom:8px}
+    input[type="text"], input[type="email"], textarea, select{width:100%;padding:10px 12px;border:1px solid #d0d0d0;border-radius:6px;font-size:15px;box-sizing:border-box}
+    textarea{min-height:84px;resize:vertical}
+    #submitBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--accent);color:var(--dark);border:none;padding:14px 28px;font-size:16px;font-weight:700;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,0.18);cursor:pointer;z-index:999;min-width:220px}
+    #submitBtn:disabled{opacity:0.6;cursor:default}
+    @media(max-width:720px){.form-wrap{margin:16px;padding:18px;padding-bottom:120px;border-radius:10px}#submitBtn{min-width:70%;bottom:16px}}
+    #result{margin-top:10px;font-weight:700;color:green}
+  </style>
+</head>
+<body>
+  <div class="form-wrap" id="formWrap">
+    <h2>Pickup Request Form</h2>
+    <form id="pickupForm" onsubmit="handleSubmit(event)" autocomplete="on" novalidate>
+      <div class="row"><label for="email">Email</label><input id="email" type="email" required></div>
+      <div class="row"><label for="sender">Sender Name (Your Business Name)</label><input id="sender" type="text" required></div>
+      <div class="row"><label for="receiver">Receiver Name</label><input id="receiver" type="text" required></div>
+      <div class="row"><label for="contact">Receiver Contact</label><input id="contact" type="text" required></div>
+      <div class="row"><label for="homeAddress">Receiver Home Address Line 1</label><input id="homeAddress" type="text" required></div>
+      <div class="row"><label for="workAddress">Receiver Work Address (Other)</label><input id="workAddress" type="text"></div>
+      <div class="row"><label for="city">Receiver City/Town</label><select id="city" required>
+        <option value="">Select a Town</option>
+        <!-- (shortened list for brevity) -->
+        <option>Arima</option><option>Chaguanas</option><option>San Fernando</option><option>Port of Spain</option>
+      </select></div>
+      <div class="row"><label for="cod">C.O.D (Cash on Delivery) + Delivery Fee</label><input id="cod" type="text" required></div>
+      <div class="row"><label for="instructions">Special Instructions</label><textarea id="instructions"></textarea></div>
+      <div class="row"><label for="shipmentType">Shipment Type</label><select id="shipmentType" required><option value="">Select shipment type</option><option>Delivery</option><option>Procurement</option><option>Exchange</option><option>Refund</option></select></div>
+      <div class="row"><label for="contents">Content Description</label><input id="contents" type="text" placeholder="e.g. Jewelry, Clothing, Beauty products" required></div>
+      <div id="result" aria-live="polite"></div>
+    </form>
+  </div>
+  <button id="submitBtn" type="button" onclick="document.getElementById('pickupForm').requestSubmit();">Submit</button>
+
+<script>
+  const API_URL = "REPLACE_WITH_YOUR_APPS_SCRIPT_WEBAPP_URL"; // set after deploying Apps Script
+
+  async function handleSubmit(e){
+    if(e && e.preventDefault) e.preventDefault();
+    const form = document.getElementById('pickupForm');
+    if(!form.checkValidity()){ form.reportValidity(); return; }
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    const data = {
+      email: document.getElementById('email').value.trim(),
+      sender: document.getElementById('sender').value.trim(),
+      receiver: document.getElementById('receiver').value.trim(),
+      contact: document.getElementById('contact').value.trim(),
+      homeAddress: document.getElementById('homeAddress').value.trim(),
+      workAddress: document.getElementById('workAddress').value.trim(),
+      city: document.getElementById('city').value,
+      cod: document.getElementById('cod').value.trim(),
+      instructions: document.getElementById('instructions').value.trim(),
+      shipmentType: document.getElementById('shipmentType').value,
+      contents: document.getElementById('contents').value.trim()
+    };
+    try{
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'submitOrder', formData: data })
+      });
+      const json = await res.json();
+      if(json.success){
+        document.getElementById('result').textContent = '✅ Pickup submitted — Tracking #: ' + (json.trackingNumber||'N/A');
+        form.reset();
+      } else {
+        document.getElementById('result').textContent = '❌ Error: ' + (json.error || 'Unknown');
+      }
+    } catch(err){
+      document.getElementById('result').textContent = '❌ Error contacting server.';
+      console.error(err);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Submit';
+    }
+  }
+
+  document.getElementById('pickupForm').addEventListener('submit', handleSubmit);
+</script>
+</body>
+</html>
